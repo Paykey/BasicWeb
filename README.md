@@ -1,14 +1,17 @@
-# BasicWeb
+# 📝 Summing-up AI Practice (강의자료 요약 웹)
 
-## 🛠️ 현재 적용된 기술 스택 (초기 세팅)
-* **Backend:** FastAPI, Python 3.10
-* **Container:** Docker
-* **CI/CD:** GitHub Actions (코드 Push 시 자동 Docker Build 테스트 적용 완료)
+## 🛠️ 기술 스택
 
-## 📌 주요 기능 (진행 중)
-- [x] FastAPI 기본 서버 구동 및 뼈대 구축
-- [x] 파일 업로드 및 가짜(Mock) AI 분석 지연(3초) 응답 API 구현
-- [x] Dockerfile 작성 및 컨테이너 환경 격리 테스트 완료
-- [x] GitHub Actions를 통한 CI(지속적 통합) 자동화 뼈대 구축
-- [ ] 실제 AI 모델(PyTorch 등) 연동 (예정)
-- [ ] Kubernetes(K8s)를 활용한 클라우드 배포 및 오토스케일링 적용 (예정)
+- **Backend:** FastAPI, Python 3.10
+- **AI 연동:** OpenAI API
+- **Container:** Docker
+- **CI/CD:** GitHub Actions
+
+## 📌 주요 진행 상황
+
+- [x] FastAPI 기본 서버 및 Docker 컨테이너 환경 격리 완료
+- [x] GitHub Actions를 통한 자동 빌드(CI) 파이프라인 구축
+- [x] OpenAI API 키 발급 및 환경변수(.env) 보안 세팅 완료
+- [ ] 사용자 업로드 파일(강의자료) 텍스트 추출 기능 구현 (예정)
+- [ ] OpenAI API를 활용한 핵심 내용 요약 기능 연동 (예정)
+- [ ] 완성된 컨테이너 홈 서버 배포 및 테스트 (예정)
