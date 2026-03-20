@@ -1,6 +1,10 @@
+import os
 import asyncio
 from fastapi import FastAPI, File, UploadFile
 from pydantic import BaseModel
+from dotenv import load_dotenv
+
+load_dotenv() # .env 파일에 있는 환경변수 불러오기
 
 app = FastAPI()
 
