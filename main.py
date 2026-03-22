@@ -1,18 +1,34 @@
 import os
-import asyncio
-from fastapi import FastAPI, File, UploadFile
+import httpx
+from pathlib import Path
+from fastapi import FastAPI, File, UploadFile, HTTPException
 from pydantic import BaseModel
 from dotenv import load_dotenv
-from openai import OpenAI
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
+
+# from openai import OpenAI
 
 load_dotenv() # .env 파일에 있는 환경변수 불러오기
 
+# 프로젝트 루트 경로 기준으로 static/templates 파일을 안전하게 참조
+BASE_DIR = Path(__file__).resolve().parent
+
 app = FastAPI()
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+# 정적 파일(CSS/JS) 서빙 경로
+app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
+
+# OpenAI API 사용 시 아래 두 줄 주석 해제
+# from openai import OpenAI
+# client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+LOCAL_LLM_ENDPOINT = os.getenv("LOCAL_LLM_ENDPOINT", "http://localhost:11434/api/generate")
+LOCAL_LLM_MODEL = os.getenv("LOCAL_LLM_MODEL", "llama3.1:8b")
 
 @app.get("/")
 def root():
-    return {"message": "main page"}
+    # 첫 화면으로 HTML 템플릿 반환
+    return FileResponse(BASE_DIR / "templates" / "index.html")
 
 @app.get("/sub1")
 def sub1():
@@ -49,19 +65,46 @@ class SummaryRequest(BaseModel):
     text: str
 
 # 요약 요청을 처리하는 API 엔드포인트
-# 프론트엔드에서 긴 텍스트를 보내면, OpenAI API를 호출하여 요약된 결과 반환
+# 프론트엔드에서 긴 텍스트를 보내면 로컬 LLM으로 요약 결과 반환
 @app.post("/summarize")
 async def summarize_text(request: SummaryRequest):
-    response = client.chat.completions.create(
-        model="gpt-3.5-turbo", 
-        messages=[
-            # system: AI의 역할(페르소나)을 부여
-            {"role": "system", "content": "너는 대학생의 전공 강의자료를 핵심만 3줄로 요약해 주는 역할이야. 반드시 한국어로 대답해."},
-            # user: 사용자가 실제로 보낸 긴 텍스트
-            {"role": "user", "content": request.text}
-        ]
+    # 모델에 전달할 역할/출력 형식 지시문 + 사용자 원문 결합
+    prompt = (
+        "너는 대학생의 전공 강의자료를 핵심만 3줄로 요약해 주는 역할이야. "
+        "반드시 한국어로 대답하고, 각 줄은 간결하게 작성해.\n\n"
+        f"[강의자료]\n{request.text}"
     )
-    
-    # AI의 응답에서 요약된 텍스트를 추출하여 프론트엔드에 반환
-    # response.choices[0].message.content -> AI가 생성한 요약 텍스트
-    return {"summary": response.choices[0].message.content}
+
+    # 로컬 LLM(Ollama) 호출
+    try:
+        # Ollama generate API 형식으로 요청
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            response = await client.post(
+                LOCAL_LLM_ENDPOINT,
+                json={
+                    "model": LOCAL_LLM_MODEL,
+                    "prompt": prompt,
+                    "stream": False,
+                },
+            )
+        response.raise_for_status()
+        data = response.json()
+        # Ollama 응답의 실제 생성 텍스트는 response 키에 담김
+        summary = data.get("response", "요약 결과가 비어 있습니다.")
+        return {"summary": summary}
+    except Exception as exc:
+        # 프론트에서 바로 처리할 수 있도록 HTTP 에러로 변환
+        raise HTTPException(status_code=500, detail=f"로컬 LLM 호출 실패: {exc}")
+
+    # OpenAI API로 다시 전환할 때 아래 블록 사용
+    # response = client.chat.completions.create(
+    #     model="gpt-4o-mini",
+    #     messages=[
+    #         {
+    #             "role": "system",
+    #             "content": "너는 대학생의 전공 강의자료를 핵심만 3줄로 요약해 주는 역할이야. 반드시 한국어로 대답해.",
+    #         },
+    #         {"role": "user", "content": request.text},
+    #     ],
+    # )
+    # return {"summary": response.choices[0].message.content}

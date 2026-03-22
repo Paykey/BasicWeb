@@ -1,0 +1,199 @@
+:root {
+  /* 색상/그림자 토큰: 화면 분위기를 한 곳에서 관리 */
+  --bg-1: #f4efe6;
+  --bg-2: #dde8f5;
+  --ink: #1f2a38;
+  --muted: #4a5868;
+  --accent: #cb5a2a;
+  --accent-dark: #8f3a17;
+  --panel: rgba(255, 255, 255, 0.86);
+  --border: rgba(31, 42, 56, 0.15);
+  --shadow: 0 20px 45px rgba(31, 42, 56, 0.14);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* 페이지 기본 배경/타이포 */
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: "Pretendard", "Noto Sans KR", sans-serif;
+  color: var(--ink);
+  background:
+    radial-gradient(circle at 12% 18%, #ffead2 0%, transparent 30%),
+    radial-gradient(circle at 90% 12%, #d8ecff 0%, transparent 34%),
+    linear-gradient(145deg, var(--bg-1), var(--bg-2));
+  overflow-x: hidden;
+}
+
+.bg-shape {
+  /* 배경 장식용 블러 원형 오브젝트 */
+  position: fixed;
+  border-radius: 999px;
+  filter: blur(40px);
+  opacity: 0.45;
+  z-index: -1;
+}
+
+.bg-shape-one {
+  width: 320px;
+  height: 320px;
+  background: #ffd39f;
+  top: -60px;
+  left: -80px;
+}
+
+.bg-shape-two {
+  width: 360px;
+  height: 360px;
+  background: #b8d9ff;
+  bottom: -120px;
+  right: -100px;
+}
+
+.container {
+  /* 전체 콘텐츠 레이아웃 컨테이너 */
+  width: min(980px, calc(100% - 2rem));
+  margin: 3rem auto;
+  display: grid;
+  gap: 1.2rem;
+}
+
+.hero {
+  animation: fade-up 0.6s ease-out;
+}
+
+.eyebrow {
+  margin: 0;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent-dark);
+}
+
+h1 {
+  margin: 0.35rem 0 0;
+  font-size: clamp(1.8rem, 4vw, 2.8rem);
+  line-height: 1.2;
+}
+
+.hero-sub {
+  margin: 0.6rem 0 0;
+  color: var(--muted);
+}
+
+.panel {
+  /* 입력/결과 카드 공통 스타일 */
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 1rem;
+  backdrop-filter: blur(8px);
+  box-shadow: var(--shadow);
+  animation: fade-up 0.7s ease-out;
+}
+
+h2 {
+  margin: 0 0 0.7rem;
+  font-size: 1.05rem;
+}
+
+textarea {
+  /* 강의 텍스트 입력창 */
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 0.9rem;
+  resize: vertical;
+  font: inherit;
+  line-height: 1.45;
+  background: rgba(255, 255, 255, 0.9);
+}
+
+textarea:focus {
+  outline: 2px solid rgba(203, 90, 42, 0.35);
+  border-color: var(--accent);
+}
+
+.actions {
+  display: flex;
+  gap: 0.8rem;
+  align-items: center;
+  margin-top: 0.8rem;
+}
+
+button {
+  /* 요약 실행 버튼 */
+  border: none;
+  border-radius: 999px;
+  padding: 0.62rem 1rem;
+  background: linear-gradient(135deg, var(--accent), #e17b3f);
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 20px rgba(203, 90, 42, 0.28);
+}
+
+button:disabled {
+  opacity: 0.65;
+  cursor: wait;
+  transform: none;
+}
+
+.status {
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.result {
+  /* 요약 결과 출력 영역 */
+  margin: 0;
+  padding: 0.9rem;
+  min-height: 130px;
+  border-radius: 12px;
+  border: 1px dashed var(--border);
+  background: rgba(255, 255, 255, 0.65);
+  white-space: pre-wrap;
+  line-height: 1.5;
+}
+
+@keyframes fade-up {
+  /* 상단에서 살짝 떠오르는 등장 애니메이션 */
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 700px) {
+  /* 모바일 화면에서 간격/버튼 배치 최적화 */
+  .container {
+    margin: 1.2rem auto 2rem;
+  }
+
+  .panel {
+    padding: 0.9rem;
+  }
+
+  .actions {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  button {
+    width: 100%;
+  }
+}
