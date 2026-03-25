@@ -1,14 +1,14 @@
 const summarizeBtn = document.getElementById("summarizeBtn");
-const lectureText = document.getElementById("lectureText");
+const lectureFile = document.getElementById("lectureFile");
 const summaryResult = document.getElementById("summaryResult");
 const statusText = document.getElementById("status");
+const selectedFileName = document.getElementById("selectedFileName");
 
 async function summarizeLecture() {
-  // 입력값 앞뒤 공백 제거
-  const text = lectureText.value.trim();
+  const selectedFile = lectureFile.files?.[0];
 
-  if (!text) {
-    statusText.textContent = "요약할 내용을 먼저 입력해 주세요.";
+  if (!selectedFile) {
+    statusText.textContent = "요약할 파일을 먼저 선택해 주세요.";
     return;
   }
 
@@ -17,13 +17,13 @@ async function summarizeLecture() {
   summaryResult.textContent = "요약 생성 중...";
 
   try {
+    const formData = new FormData();
+    formData.append("file", selectedFile);
+
     // 백엔드 요약 API 호출
     const response = await fetch("/summarize", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ text }),
+      body: formData,
     });
 
     const data = await response.json();
@@ -48,3 +48,10 @@ async function summarizeLecture() {
 
 // 버튼 클릭 시 요약 실행
 summarizeBtn.addEventListener("click", summarizeLecture);
+
+lectureFile.addEventListener("change", () => {
+  const selectedFile = lectureFile.files?.[0];
+  selectedFileName.textContent = selectedFile
+    ? `선택 파일: ${selectedFile.name}`
+    : "선택된 파일 없음";
+});

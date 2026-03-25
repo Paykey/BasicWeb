@@ -124,6 +124,27 @@ textarea:focus {
   margin-top: 0.8rem;
 }
 
+/* 실제 "파일 선택" 버튼 */
+#lectureFile::file-selector-button {
+  border: none;
+  border-radius: 999px;
+  padding: 14px 24px; /* 크기 키우기 */
+  margin-right: 10px;
+  font-size: 16px;
+  font-weight: 700;
+  background: linear-gradient(135deg, #2f6cb8, #3f87d8);
+  color: white;
+  cursor: pointer;
+  transition:
+    transform 0.2s,
+    box-shadow 0.2s;
+}
+
+#lectureFile::file-selector-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 20px rgba(63, 135, 216, 0.28);
+}
+
 button {
   /* 요약 실행 버튼 */
   border: none;

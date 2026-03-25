@@ -1,0 +1,10 @@
+version: "3.8"
+
+services:
+  app:
+    build: .
+    container_name: my-basicweb
+    ports:
+      - "8000:8000"
+    environment:
+      - LOCAL_LLM_ENDPOINT=http://host.docker.internal:11434/api/generate

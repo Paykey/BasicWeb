@@ -1,11 +1,15 @@
 import os
 import httpx
+import io
+import tempfile
 from pathlib import Path
 from fastapi import FastAPI, File, UploadFile, HTTPException
 from pydantic import BaseModel
 from dotenv import load_dotenv
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
+from pypdf import PdfReader
+from pptx import Presentation
 
 # from openai import OpenAI
 
@@ -30,52 +34,76 @@ def root():
     # 첫 화면으로 HTML 템플릿 반환
     return FileResponse(BASE_DIR / "templates" / "index.html")
 
-@app.get("/sub1")
-def sub1():
-    return {"message": "sub page 1"}
+# PDF/PPTX 파일에서 텍스트 추출 함수
+def extract_text_from_pdf(file_bytes: bytes) -> str:
+    reader = PdfReader(io.BytesIO(file_bytes))
+    pages_text = []
+    for page in reader.pages:
+        pages_text.append(page.extract_text() or "")
+    return "\n".join(pages_text).strip()
 
-@app.get("/sub2")
-def sub2():    
-    return {"message": "sub page 2"}
 
-class UserInfo(BaseModel):
-    name: str           # 이름
-    age: int            # 나이
-    symptoms: list[str] # 증상 리스트
-    
-@app.post("/send_info")
-def recieve_info(user: UserInfo):
-    print(f"Received info for {user.name}, age {user.age}, symptoms: {', '.join(user.symptoms)}")
-    return {"status":"성공", "message": f"{user.name}님의 정보가 성공적으로 수신되었습니다."}
+def extract_text_from_pptx(temp_path: Path) -> str:
+    presentation = Presentation(str(temp_path))
+    slide_texts = []
+    for slide in presentation.slides:
+        shape_texts = []
+        for shape in slide.shapes:
+            if hasattr(shape, "text") and shape.text:
+                shape_texts.append(shape.text)
+        if shape_texts:
+            slide_texts.append("\n".join(shape_texts))
+    return "\n\n".join(slide_texts).strip()
 
-@app.post("/upload_photo")
-def recieve_photo(photo: UploadFile = File(...)):
-    # 백엔드 로그 출력
-    print(f"Received photo: {photo.filename}, content type: {photo.content_type}")
-    
-    # 프론트엔딩 확인
-    return {
-        "status": "성공",
-        "message": f"'{photo.filename}' 사진이 성공적으로 업로드되었습니다."
-    }
-    
-
-# 프론트엔드(사용자)가 보낼 데이터 형식
-class SummaryRequest(BaseModel):
-    text: str
 
 # 요약 요청을 처리하는 API 엔드포인트
 # 프론트엔드에서 긴 텍스트를 보내면 로컬 LLM으로 요약 결과 반환
 @app.post("/summarize")
-async def summarize_text(request: SummaryRequest):
+async def summarize_file(file: UploadFile = File(...)):
+    allowed_types = {
+        "application/pdf": "pdf",
+        "application/vnd.openxmlformats-officedocument.presentationml.presentation": "pptx",
+        "application/vnd.ms-powerpoint": "ppt",
+    }
+    extension = Path(file.filename or "").suffix.lower()
+    detected_type = allowed_types.get(file.content_type)
+
+    if extension not in {".pdf", ".pptx", ".ppt"} and detected_type not in {"pdf", "pptx", "ppt"}:
+        raise HTTPException(status_code=400, detail="PDF 또는 PPT(PPTX) 파일만 업로드할 수 있습니다.")
+
+    file_bytes = await file.read()
+    if not file_bytes:
+        raise HTTPException(status_code=400, detail="업로드된 파일이 비어 있습니다.")
+
+    temp_file_path: Path | None = None
+    try:
+        if extension == ".pdf" or detected_type == "pdf":
+            text = extract_text_from_pdf(file_bytes)
+        elif extension == ".pptx" or detected_type == "pptx":
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".pptx", dir=BASE_DIR) as temp_file:
+                temp_file.write(file_bytes)
+                temp_file_path = Path(temp_file.name)
+            text = extract_text_from_pptx(temp_file_path)
+        else:
+            raise HTTPException(
+                status_code=400,
+                detail="기존 PPT(.ppt) 형식은 현재 지원하지 않습니다. PPTX로 변환 후 업로드해 주세요.",
+            )
+
+        if not text:
+            raise HTTPException(status_code=400, detail="파일에서 추출된 텍스트가 없습니다.")
+    finally:
+        if temp_file_path and temp_file_path.exists():
+            temp_file_path.unlink()
+            
     # 모델에 전달할 역할/출력 형식 지시문 + 사용자 원문 결합
     prompt = (
-        "너는 자료를 핵심만 3줄로 요약해 주는 역할이야. "
-        "반드시 한국어로 대답하고, 각 줄은 간결하게 작성해.\n\n"
-        f"[강의자료]\n{request.text}"
+        "너는 자료를 핵심만 요약해 주는 역할이야. 각 줄은 간결하게 작성해."
+        "반드시 한국어로 대답해.\n\n"
+        f"[강의자료]\n{text}"
     )
 
-    # 로컬 LLM(Ollama) 호출
+    # 로컬 LLM 호출
     try:
         # Ollama generate API 형식으로 요청
         async with httpx.AsyncClient(timeout=60.0) as client:
