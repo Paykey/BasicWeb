@@ -1,8 +1,6 @@
 const summarizeBtn = document.getElementById("summarizeBtn");
 const lectureFile = document.getElementById("lectureFile");
 const summaryResult = document.getElementById("summaryResult");
-const statusText = document.getElementById("status");
-const selectedFileName = document.getElementById("selectedFileName");
 
 async function summarizeLecture() {
   const selectedFile = lectureFile.files?.[0];
@@ -48,10 +46,3 @@ async function summarizeLecture() {
 
 // 버튼 클릭 시 요약 실행
 summarizeBtn.addEventListener("click", summarizeLecture);
-
-lectureFile.addEventListener("change", () => {
-  const selectedFile = lectureFile.files?.[0];
-  selectedFileName.textContent = selectedFile
-    ? `선택 파일: ${selectedFile.name}`
-    : "선택된 파일 없음";
-});
